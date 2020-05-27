@@ -25,4 +25,20 @@ python execute.py
 It will execute all the logic forms in all_data.json. All the function definitions are in APIs.py
 
 This site is under construction, and we will release other codes in the future.
+
 # Template-GPT2-Logic2Text
+Go to the data/ folder, link the [all_csv](https://github.com/wenhuchen/Table-Fact-Checking/tree/master/data/all_csv) to this place:
+```
+cd data/
+ln -s [you_all_csv_folder] .
+cd ../
+```
+In the parent folder, run the following command to train the model
+```
+CUDA_VISIBLE_DEVICES=0 python GPT2.py --do_train
+```
+After training, run the following command to test the model
+```
+CUDA_VISIBLE_DEVICES=0 python GPT2-coarse-to-fine.py --do_test --load_from [YOUR_MODEL]
+```
+The results will be saved to the output folder (you need to create one if not exist).

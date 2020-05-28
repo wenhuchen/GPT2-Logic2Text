@@ -1,4 +1,4 @@
-# Logic2Text
+# Generation model for [Logic2Text](https://github.com/czyssrs/Logic2Text)
 
 ## Data
 In the dataset folder, we have the full dataset (all_data.json), and the train test split (train.json, valid.json, test.json). 

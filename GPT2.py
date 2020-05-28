@@ -37,7 +37,6 @@ if __name__ == '__main__':
     parser.add_argument("--top_p", type=float, default=0.9)
     parser.add_argument('--seed', type=int, default=42, help="random seed for initialization")
     parser.add_argument('--do_train', default=False, action="store_true", help="whether to train or test the model")
-    parser.add_argument('--do_rl', default=False, action="store_true", help="whether to train or test the model")
     parser.add_argument('--do_val', default=False, action="store_true", help="whether to train or test the model")
     parser.add_argument('--do_test', default=False, action="store_true", help="whether to compute the BLEU scores on test split")
     parser.add_argument('--epoch', default=10, type=int, help="whether to train or test the model")
@@ -172,36 +171,6 @@ if __name__ == '__main__':
             perplexity = math.exp(avg_loss)
 
             print("validation perplexity is {}".format(perplexity))
-
-    if args.do_ppl:
-        dataset = GPTTableDatabase(None, None, 'data/test_lm.json',
-                                   tokenizer, args.batch_size, args.max_len)
-        model.load_state_dict(torch.load(args.load_from))
-        model.eval()
-
-        with torch.no_grad():
-            losses = []
-            for idx in range(0, dataset.test_len()):
-                batch = dataset.get_data(idx, 'test')
-                batch = tuple(Variable(t).to(device) for t in batch)
-                trg_inp, trg_out, mask, caption = batch
-
-                inputs = torch.cat([caption, trg_inp], 1)
-
-                logits = model(inputs)[0]
-                logits = logits[:, -trg_out.shape[1]:, :].contiguous()
-
-                loss = criterion(logits.view(-1, logits.shape[-1]), trg_out.view(-1))
-
-                loss = loss * mask.view(-1)
-                loss = loss.sum() / mask.sum()
-
-                losses.append(loss.item())
-
-                avg_loss = sum(losses) / len(losses)
-                perplexity = math.exp(avg_loss)                
-
-            print("test perplexity is {}".format(perplexity))
 
     if args.do_test:
         dataset = GPTTableDatabase(None, None, 'data/test_lm.json', tokenizer, args.batch_size, args.max_len)

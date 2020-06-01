@@ -64,9 +64,6 @@ if __name__ == '__main__':
     else:
         args.batch_size = 5
 
-    if args.do_rl:
-        args.batch_size = 1
-
     tokenizer = GPT2Tokenizer.from_pretrained(args.model)
     model = GPT2LMHeadModel.from_pretrained(args.model)
     model = nn.DataParallel(model)
@@ -177,10 +174,8 @@ if __name__ == '__main__':
         model.load_state_dict(torch.load(args.load_from))
         model.eval()
 
-        sent_bleus_1 = []
-        sent_bleus_2 = []
-        sent_bleus_3 = []
-
+        list_of_hypothesis = []
+        list_of_references = []
         results = {}
         with torch.no_grad():
             for idx in range(0, min(args.decode_first_K, dataset.test_len())):
@@ -205,20 +200,15 @@ if __name__ == '__main__':
                     results[table_id].append(text)
 
                     hypothesis = text.lower().split(' ')
-                    sent_bleus_1.append(nltk.translate.bleu_score.sentence_bleu(
-                        references, hypothesis, weights=(1, 0, 0)))
-                    sent_bleus_2.append(nltk.translate.bleu_score.sentence_bleu(
-                        references, hypothesis, weights=(0.5, 0.5, 0)))
-                    sent_bleus_3.append(nltk.translate.bleu_score.sentence_bleu(
-                        references, hypothesis, weights=(0.33, 0.33, 0.33)))
+                    
+                    list_of_hypothesis.append(hypothesis)
+                    list_of_references.append(references)
 
-                bleu_1 = format((sum(sent_bleus_1) / len(sent_bleus_1) * 100), '.2f')
-                bleu_2 = format((sum(sent_bleus_2) / len(sent_bleus_2) * 100), '.2f')
-                bleu_3 = format((sum(sent_bleus_3) / len(sent_bleus_3) * 100), '.2f')
+                bleu = nltk.translate.bleu_score.corpus_bleu(list_of_references, list_of_hypothesis)
+                sys.stdout.write('finished {}/{}; BLEU {} \r'.format(idx, dataset.test_len(), bleu))
 
-                sys.stdout.write("finished {}/{} BLEU score {}/{}/{} \r".format(idx, dataset.test_len(), bleu_1, bleu_2, bleu_3))
+            bleu = nltk.translate.bleu_score.corpus_bleu(list_of_references, list_of_hypothesis)
+            print('Overall Corpus BLEU {}'.format(bleu))
 
-            print("total corpus BLEU score = {}/{}/{}".format(bleu_1, bleu_2, bleu_3))
-
-        with open('outputs/GPT_{}_{}.json'.format(args.model, bleu_3), 'w') as f:
+        with open('outputs/GPT_{}_{}.json'.format(args.model, bleu), 'w') as f:
             json.dump(results, f, indent=2)
